@@ -70,6 +70,7 @@
       width: 50px;
       margin-bottom: 10px;
     }
+    /* Estilos para pantalla de carga */
     .loading-screen {
       display: none;
       position: fixed;
@@ -102,6 +103,30 @@
   <script>
     const HOST = 'https://pluss-eme-bus-api-dev.prodigio.tech/product';
     const COMPANY_ID = '821a3b2c-a042-11ef-93ee-4201c0a80104';
+
+    async function loadOrders() {
+      const queryParams = new URLSearchParams({
+        limit: 100,
+        offset: 0,
+        filters: 'id==24'
+      });
+
+      const response = await fetch(`${HOST}/bus-administration/v1/companies/${COMPANY_ID}/orders?${queryParams}`);
+      
+      if (response.ok) {
+        const orders = await response.json();
+        
+        const orderSelect = document.getElementById('orderId');
+        orders.forEach(order => {
+          const option = document.createElement('option');
+          option.value = order.id;
+          option.textContent = order.code;
+          orderSelect.appendChild(option);
+        });
+      } else {
+        alert('Error al cargar las órdenes.');
+      }
+    }
 
     async function generatePayment() {
       const orderId = document.getElementById('orderId').value;
@@ -192,7 +217,10 @@
       window.location.href = '/workflow-payments';
     }
 
-    window.onload = validatePayment;
+    window.onload = () => {
+      loadOrders();
+      validatePayment();
+    };
   </script>
 </head>
 <body>
@@ -203,8 +231,9 @@
       <option value="1">WebPay Plus</option>
     </select>
     <br><br>
-    <label for="orderId">ID de la Orden:</label>
-    <input type="number" id="orderId" min="1">
+    <label for="orderId">Orden:</label>
+    <select id="orderId">
+    </select>
     <br><br>
     <button onclick="generatePayment()">Pagar</button>
 
@@ -214,6 +243,7 @@
     </form>
   </div>
 
+  <!-- Pantalla de carga -->
   <div id="loading-screen" class="loading-screen" style="display: none;">
     <div class="spinner"></div>
     <p>Validando el pago, por favor espere...</p>
