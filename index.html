@@ -70,7 +70,6 @@
       width: 50px;
       margin-bottom: 10px;
     }
-    /* Estilos para pantalla de carga */
     .loading-screen {
       display: none;
       position: fixed;
@@ -145,6 +144,7 @@
       if (tokenWs || declinedToken) {
         document.querySelector('.container').style.display = 'none';
         document.getElementById('loading-screen').style.display = 'flex';
+        const orderId = document.getElementById('orderId').value;
 
         const response = await fetch(`${HOST}/bus-administration/v1/companies/${COMPANY_ID}/payments:validate`, {
           method: 'POST',
@@ -152,7 +152,7 @@
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            orderId: 1,
+            orderId: orderId,
             tokenWs: tokenWs || null,
             declinedToken: declinedToken || null,
             declinedOrder: declinedOrder || null,
@@ -184,7 +184,7 @@
     }
 
     function goHome() {
-      window.location.href = '/';
+      window.location.href = '/workflow-payments';
     }
 
     window.onload = validatePayment;
@@ -192,7 +192,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Confirmación de Orden de Compra</h1>
+    <h1>Confirmar Orden de Compra</h1>
     <label for="paymentMethod">Método de pago:</label>
     <select id="paymentMethod">
       <option value="1">WebPay Plus</option>
@@ -209,7 +209,6 @@
     </form>
   </div>
 
-  <!-- Pantalla de carga -->
   <div id="loading-screen" class="loading-screen" style="display: none;">
     <div class="spinner"></div>
     <p>Validando el pago, por favor espere...</p>
