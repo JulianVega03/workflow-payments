@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmación de Orden</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background-color: white;
+      padding: 20px 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    p {
+      margin: 10px 0;
+      color: #555;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    input[type="submit"] {
+      display: none;
+    }
+    .result-card, .error-card {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    .result-card {
+      background-color: #e6ffe6;
+      border: 1px solid #00b300;
+      color: #006600;
+    }
+    .error-card {
+      background-color: #ffe6e6;
+      border: 1px solid #ff0000;
+      color: #cc0000;
+    }
+    .result-card img, .error-card img {
+      width: 50px;
+      margin-bottom: 10px;
+    }
+    /* Estilos para pantalla de carga */
+    .loading-screen {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
+      font-size: 1.5em;
+    }
+    .spinner {
+      border: 5px solid rgba(255, 255, 255, 0.3);
+      border-top: 5px solid white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+  <script>
+    const HOST = 'https://pluss-eme-bus-api-dev.prodigio.tech/product';
+    const COMPANY_ID = '821a3b2c-a042-11ef-93ee-4201c0a80104';
+
+    async function generatePayment() {
+      const orderId = document.getElementById('orderId').value;
+      const paymentMethodId = document.getElementById('paymentMethod').value;
+
+      if (!orderId) {
+        alert('Por favor, ingrese un ID de orden válido.');
+        return;
+      }
+
+      const response = await fetch(`${HOST}/bus-administration/v1/companies/${COMPANY_ID}/payments:generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          paymentMethodId: parseInt(paymentMethodId, 10),
+          orderId: parseInt(orderId, 10)
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        document.getElementById('payment-form').action = data.url;
+        document.getElementById('token_ws').value = data.token;
+        document.getElementById('payment-form').submit();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error desconocido al generar el pago.');
+      }
+    }
+
+    async function validatePayment() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenWs = urlParams.get('token_ws');
+      const declinedToken = urlParams.get('TBK_TOKEN');
+      const declinedOrder = urlParams.get('TBK_ORDEN_COMPRA');
+      const declinedSessionId = urlParams.get('TBK_ID_SESION');
+
+      if (tokenWs || declinedToken) {
+        document.querySelector('.container').style.display = 'none';
+        document.getElementById('loading-screen').style.display = 'flex';
+
+        const response = await fetch(`${HOST}/bus-administration/v1/companies/${COMPANY_ID}/payments:validate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            orderId: 1,
+            tokenWs: tokenWs || null,
+            declinedToken: declinedToken || null,
+            declinedOrder: declinedOrder || null,
+            declinedSessionId: declinedSessionId || null
+          })
+        });
+
+        document.getElementById('loading-screen').style.display = 'none';
+
+        const successMessage = document.getElementById('success-message');
+        const errorMessage = document.getElementById('error-message');
+        const errorCard = document.getElementById('error-card');
+        const resultCard = document.getElementById('result-card');
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.responseCode === 0) {
+            successMessage.innerText = data.responseDetail;
+            resultCard.style.display = 'block';
+          } else {
+            errorMessage.innerText = data.responseDetail;
+            errorCard.style.display = 'block';
+          }
+        } else {
+          errorMessage.innerText = 'Error al validar el pago';
+          errorCard.style.display = 'block';
+        }
+      }
+    }
+
+    function goHome() {
+      window.location.href = '/';
+    }
+
+    window.onload = validatePayment;
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Confirmación de Orden de Compra</h1>
+    <label for="paymentMethod">Método de pago:</label>
+    <select id="paymentMethod">
+      <option value="1">WebPay Plus</option>
+    </select>
+    <br><br>
+    <label for="orderId">ID de la Orden:</label>
+    <input type="number" id="orderId" min="1">
+    <br><br>
+    <button onclick="generatePayment()">Pagar</button>
+
+    <form id="payment-form" method="post" action="">
+      <input type="hidden" name="token_ws" id="token_ws" value="">
+      <input type="submit" value="Ir a pagar" />
+    </form>
+  </div>
+
+  <!-- Pantalla de carga -->
+  <div id="loading-screen" class="loading-screen" style="display: none;">
+    <div class="spinner"></div>
+    <p>Validando el pago, por favor espere...</p>
+  </div>
+
+  <div id="result-card" class="result-card">
+    ✅ <span id="success-message"></span>
+    <br><br>
+    <button onclick="goHome()">Volver a inicio</button>
+  </div>
+
+  <div id="error-card" class="error-card">
+    ❌ <span id="error-message"></span>
+    <br><br>
+    <button onclick="goHome()">Volver a inicio</button>
+  </div>
+</body>
+</html>
