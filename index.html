@@ -108,7 +108,7 @@
       const queryParams = new URLSearchParams({
         limit: 100,
         offset: 0,
-        filters: 'id==24'
+        filters: 'status==PENDING'
       });
 
       const response = await fetch(`${HOST}/bus-administration/v1/companies/${COMPANY_ID}/orders?${queryParams}`);
