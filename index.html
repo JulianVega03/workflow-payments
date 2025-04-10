@@ -125,6 +125,9 @@
 
       if (response.ok) {
         const data = await response.json();
+
+        localStorage.setItem('orderId', orderId);
+
         document.getElementById('payment-form').action = data.url;
         document.getElementById('token_ws').value = data.token;
         document.getElementById('payment-form').submit();
@@ -144,7 +147,9 @@
       if (tokenWs || declinedToken) {
         document.querySelector('.container').style.display = 'none';
         document.getElementById('loading-screen').style.display = 'flex';
-        const orderId = document.getElementById('orderId').value;
+        
+        const orderId = localStorage.getItem('orderId');
+        localStorage.removeItem('orderId');
 
         const response = await fetch(`${HOST}/bus-administration/v1/companies/${COMPANY_ID}/payments:validate`, {
           method: 'POST',
@@ -192,7 +197,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Confirmar Orden de Compra</h1>
+    <h1>Confirmación de Orden de Compra</h1>
     <label for="paymentMethod">Método de pago:</label>
     <select id="paymentMethod">
       <option value="1">WebPay Plus</option>
